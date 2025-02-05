@@ -20,6 +20,8 @@
           <option value="ESMM_K_CTR">ESMM_K_CTR</option>
           <option value="ESMM_W_CTR">ESMM_W_CTR</option>
           <option value="ESMM_Y_CTR">ESMM_Y_CTR</option>
+          <option value="ESGG_E_APP">ESGG_E_APP</option>
+          <option value="ESGG_W_APP">ESGG_W_APP</option>
         </optgroup>
         <optgroup label="ESOS Positions">
           <option value="ESOS_1_CTR">ESOS_1_CTR</option>
@@ -32,6 +34,8 @@
           <option value="ESOS_N_CTR">ESOS_N_CTR</option>
           <option value="ESOS_F_CTR">ESOS_F_CTR</option>
           <option value="ESOS_K_CTR">ESOS_K_CTR</option>
+          <option value="ESSA_E_APP">ESSA_E_APP</option>
+          <option value="ESSA_W_APP">ESSA_W_APP</option>
         </optgroup>
       </select>
 
