@@ -123,6 +123,11 @@ function removeStrip() {
   store.removeDepartureStrip(props.strip.callsign)
 }
 
+function onRemarksInput(event) {
+  localRemarks.value = event.target.value
+  store.updateArrivalRemarks(props.strip.callsign, localRemarks.value)
+}
+
 /**
  * Toggle the (S)NO(W)TAM overlay
  */

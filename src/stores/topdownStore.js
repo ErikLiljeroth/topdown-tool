@@ -81,6 +81,7 @@ export const useTopdownStore = defineStore('topdown', {
     notamsByIcao: {},
     ignoredStrips: [],
     soundEnabled: false, // Can be used to control whether sound is played for new strips
+    remarksByCallsign: {},
   }),
 
   getters: {
@@ -276,30 +277,31 @@ export const useTopdownStore = defineStore('topdown', {
 
       // 1) First case: handle flights that HAVE a flight plan
       this.pilots.forEach((pilot) => {
-        if (this.ignoredStrips.includes(pilot.callsign.toUpperCase())) return
+        const callsignUpper = pilot.callsign.toUpperCase()
+        if (this.ignoredStrips.includes(callsignUpper)) return
 
         const fp = pilot.flight_plan
-        if (!fp) return // manage "no flight plan" further down below
+        if (!fp) return
 
-        const callsignUpper = pilot.callsign.toUpperCase()
         const depIcao = (fp.departure || '').toUpperCase()
         const arrIcao = (fp.arrival || '').toUpperCase()
 
         const depRelevant = coverageSet.has(depIcao) && !omittedSet.has(depIcao)
         const arrRelevant = coverageSet.has(arrIcao) && !omittedSet.has(arrIcao)
 
-        // If at least one side is relevant, we'll create or update strips
         if (!depRelevant && !arrRelevant) return
 
         // A) Update or create departure strip if relevant
         if (depRelevant) {
           const existingDepStrip = depMap.get(callsignUpper)
           if (existingDepStrip) {
-            if (!existingDepStrip.hasFlightPlan) {
-              existingDepStrip.hasFlightPlan = true
+            existingDepStrip.hasFlightPlan = true
+            if (!newDeparture.includes(existingDepStrip)) {
+              newDeparture.push(existingDepStrip)
             }
           } else {
             // Create new departure strip
+            const oldRemarks = this.remarksByCallsign[callsignUpper] || ''
             newDeparture.push({
               callsign: pilot.callsign,
               hasFlightPlan: true,
@@ -307,28 +309,28 @@ export const useTopdownStore = defineStore('topdown', {
               departureAerodrome: depIcao,
               etd: fp.deptime,
               newAlert: true,
-              remarks: '',
+              remarks: oldRemarks,
             })
             newStripsCreated = true
           }
         }
 
-        // B) Update or create arrival strip if relevant
+        // --- B) Arrival strip if relevant
         if (arrRelevant) {
           const existingArrStrip = arrMap.get(callsignUpper)
           if (existingArrStrip) {
-            // If we previously had no flight plan (unclear if possible), update it
-            if (!existingArrStrip.hasFlightPlan) {
-              existingArrStrip.hasFlightPlan = true
+            existingArrStrip.hasFlightPlan = true
+            if (!newArrival.includes(existingArrStrip)) {
+              newArrival.push(existingArrStrip)
             }
           } else {
-            // Create new arrival strip
+            // Create brand-new arrival strip, merging old remarks
+            const oldRemarks = this.remarksByCallsign[callsignUpper] || ''
             const depStr = fp.deptime?.toString().padStart(4, '0') || '0000'
             const depHours = Number(depStr.slice(0, 2))
             const depMinutes = Number(depStr.slice(2, 4))
             const depTotal = depHours * 60 + depMinutes
             const enroute = Number(fp.enroute_time) || 0
-            // Calculate ETA according to (very) naive estimate
             const etaTotal = depTotal + enroute + 15
             const etaHours = Math.floor(etaTotal / 60) % 24
             const etaMins = etaTotal % 60
@@ -342,7 +344,7 @@ export const useTopdownStore = defineStore('topdown', {
               arrivalAerodrome: arrIcao,
               eta: etaFormatted,
               newAlert: true,
-              remarks: '',
+              remarks: oldRemarks, // preserve from dictionary
             })
             newStripsCreated = true
           }
@@ -352,29 +354,26 @@ export const useTopdownStore = defineStore('topdown', {
       // 2) Second case: handle flights that have NO flight plan
       // In this case we have to check whether a flight is in a volume close to an AD
       this.pilots.forEach((pilot) => {
-        if (this.ignoredStrips.includes(pilot.callsign.toUpperCase())) return
+        const callsignUpper = pilot.callsign.toUpperCase()
+        if (this.ignoredStrips.includes(callsignUpper)) return
 
-        // Skip if this pilot HAS flight plan => handled above
+        // If pilot has an FP, skip
         if (pilot.flight_plan) return
 
-        const callsignUpper = pilot.callsign.toUpperCase()
-
-        // Basic “are they on the ground?” checks
-        // altitude < ~3000 ft, groundspeed < 40
+        // Basic “on the ground” heuristic
         const alt = pilot.altitude || 0
         const gspd = pilot.groundspeed || 0
         if (alt > 3000 || gspd > 40) {
           return
         }
 
-        // Find the nearest aerodrome in coverage (within 3 nm)
+        // Check for nearest AD within 3nm
         let nearestIcao = null
         let nearestDist = Infinity
-
         AERODROMES.forEach((aero) => {
           const icao = aero.icao
-          if (!coverageSet.has(icao)) return // skip if not owned
-          if (omittedSet.has(icao)) return // skip if AD ignored/omitted
+          if (!coverageSet.has(icao)) return
+          if (omittedSet.has(icao)) return
 
           const dist = distanceNm(
             pilot.latitude,
@@ -388,24 +387,28 @@ export const useTopdownStore = defineStore('topdown', {
           }
         })
 
-        // If we found a covered, non-omitted aerodrome within 3 nm
+        // If we found an AD
         if (nearestIcao && nearestDist <= 3) {
-          // Check if we already have a departure strip
           const existingDepStrip = depMap.get(callsignUpper)
-          if (!existingDepStrip) {
-            // Create a new "no flight plan" departure strip
+          if (existingDepStrip) {
+            // Reuse old object, set hasFlightPlan = false
+            existingDepStrip.hasFlightPlan = false
+            if (!newDeparture.includes(existingDepStrip)) {
+              newDeparture.push(existingDepStrip)
+            }
+          } else {
+            // Create brand-new "no flight plan" departure strip
+            const oldRemarks = this.remarksByCallsign[callsignUpper] || ''
             newDeparture.push({
               callsign: pilot.callsign,
-              hasFlightPlan: false, // <-- KEY
+              hasFlightPlan: false,
               aircraftType: 'N/A',
               departureAerodrome: nearestIcao,
               etd: null,
               newAlert: true,
-              remarks: '',
+              remarks: oldRemarks,
             })
             newStripsCreated = true
-          } else {
-            existingDepStrip.hasFlightPlan = false
           }
         }
       })
@@ -455,14 +458,22 @@ export const useTopdownStore = defineStore('topdown', {
     },
 
     updateArrivalRemarks(callsign, newRemarks) {
-      const strip = this.arrivalStrips.find((s) => s.callsign === callsign)
+      this.remarksByCallsign[callsign.toUpperCase()] = newRemarks
+
+      const strip = this.arrivalStrips.find(
+        (s) => s.callsign.toUpperCase() === callsign.toUpperCase(),
+      )
       if (strip) {
         strip.remarks = newRemarks
       }
     },
 
     updateDepartureRemarks(callsign, newRemarks) {
-      const strip = this.departureStrips.find((s) => s.callsign === callsign)
+      this.remarksByCallsign[callsign.toUpperCase()] = newRemarks
+
+      const strip = this.departureStrips.find(
+        (s) => s.callsign.toUpperCase() === callsign.toUpperCase(),
+      )
       if (strip) {
         strip.remarks = newRemarks
       }
