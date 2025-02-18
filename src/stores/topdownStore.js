@@ -99,6 +99,19 @@ export const useTopdownStore = defineStore('topdown', {
     setUserPosition(position) {
       console.log('Setting user position:', position)
       this.userPosition = position
+
+      // 1) Check if we already have an entry for that callsign
+      const existingIndex = this.onlineControllers.findIndex((ctrl) => ctrl.callsign === position)
+
+      // 2) If not found, push a fake “online” entry
+      if (existingIndex === -1) {
+        this.onlineControllers.push({
+          callsign: position,
+        })
+      } else {
+        // not needed, but could be used to update the entry
+      }
+
       this.resolveOwnership()
     },
 
