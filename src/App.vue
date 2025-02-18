@@ -36,6 +36,10 @@
           <option value="ESOS_K_CTR">ESOS_K_CTR</option>
           <option value="ESSA_E_APP">ESSA_E_APP</option>
           <option value="ESSA_W_APP">ESSA_W_APP</option>
+          <option value="ESSP_APP">ESSP_APP</option>
+        </optgroup>
+        <optgroup label="RTC">
+          <option value="ESSR_CTR">ESSR_CTR</option>
         </optgroup>
       </select>
 
