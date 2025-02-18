@@ -99,7 +99,7 @@ export const useTopdownStore = defineStore('topdown', {
 
     async fetchControllers() {
       try {
-        console.log('fetching controllers from vatiris.se/data')
+        console.log('fetching controllers from https://api.vatiris.se/data')
         const response = await axios.get('https://api.vatiris.se/data')
         this.onlineControllers = response.data.controllers || []
       } catch (err) {
@@ -109,7 +109,7 @@ export const useTopdownStore = defineStore('topdown', {
 
     async fetchPilots() {
       try {
-        console.log('fetching pilots from vatiris.se/data')
+        console.log('fetching pilots from https://api.vatiris.se/data')
         const response = await axios.get('https://api.vatiris.se/data')
         this.pilots = response.data.pilots || []
       } catch (err) {
@@ -164,7 +164,7 @@ export const useTopdownStore = defineStore('topdown', {
      */
     async fetchAllNotams() {
       try {
-        console.log('Fetching NOTAM from vatiris.se/notam')
+        console.log('Fetching NOTAM from https://api.vatiris.se/notam')
         const resp = await axios.get('https://api.vatiris.se/notam')
         const fullNotamText = resp.data || ''
 
