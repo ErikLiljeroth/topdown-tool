@@ -5,6 +5,11 @@ import { parseMetar } from 'metar-taf-parser'
 import { POSITIONS } from '@/data/swedenPositions.js'
 import { AERODROMES } from '@/data/swedenAerodromes.js'
 
+// Manage cases where controllers use multiple underscores in callsigns
+function normalizeCallsign(callsign) {
+  return callsign.replace(/_+/g, '_')
+}
+
 // "Simple" Haversine to get distance in nautical miles based in lat/lon
 function distanceNm(lat1, lon1, lat2, lon2) {
   const R = 6371e3 // earth radius in meters
@@ -101,7 +106,18 @@ export const useTopdownStore = defineStore('topdown', {
       try {
         console.log('fetching controllers from https://api.vatiris.se/data')
         const response = await axios.get('https://api.vatiris.se/data')
-        this.onlineControllers = response.data.controllers || []
+        const rawControllers = response.data.controllers || []
+
+        // Transform callsigns with multiple underscores into single underscores
+        const normalized = rawControllers.map((ctrl) => {
+          const normCallsign = normalizeCallsign(ctrl.callsign)
+          return {
+            ...ctrl,
+            callsign: normCallsign,
+          }
+        })
+
+        this.onlineControllers = normalized
       } catch (err) {
         console.error('fetchControllers error:', err)
       }
