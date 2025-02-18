@@ -214,10 +214,12 @@ export const useTopdownStore = defineStore('topdown', {
       icao = icao.toUpperCase()
       if (!this.omittedAirports.includes(icao)) {
         this.omittedAirports.push(icao)
+        this.updateStrips() // update strips to see effect instantly
       }
     },
     removeOmittedAirport(icao) {
       this.omittedAirports = this.omittedAirports.filter((a) => a !== icao)
+      this.updateStrips() // update the strips to see effect instantly
     },
 
     /**
