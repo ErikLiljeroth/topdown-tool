@@ -85,3 +85,4 @@ typings/
 
 *.md
 !README.md
+!CHANGELOG.md

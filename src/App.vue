@@ -112,6 +112,8 @@
       <StripBay />
     </div>
   </div>
+
+  <ChangelogModal :version-label="latestVersion" :changelog-md="changelogMd" />
 </template>
 
 <script setup>
@@ -120,13 +122,33 @@ import { useTopdownStore } from '@/stores/topdownStore.js'
 import StripBay from '@/components/StripBay.vue'
 import { AERODROMES } from '@/data/swedenAerodromes.js'
 import { POSITIONS } from '/home/erik/topdowntool/src/data/swedenPositions.js'
+import changelogMd from '../CHANGELOG.md?raw'
+import ChangelogModal from '@/components/ChangelogModal.vue'
 
 const store = useTopdownStore()
+
+// Suppose you keep your version string and markdown in the same file or import from external modules
+const changelogContent = changelogMd
+const latestVersion = ref('v0.0')
 
 // Overlay toggles
 const showCoverage = ref(false)
 const showOmitted = ref(false)
 const showDeleted = ref(false)
+
+function getLatestVersion(markdownContent) {
+  const lines = markdownContent.split('\n')
+
+  // Look for the first line that starts with "## v..."
+  for (const line of lines) {
+    const match = line.match(/^##\s+(v[\d.]+)/)
+    if (match) {
+      return match[1]
+    }
+  }
+
+  return 'v0.0' // fallback
+}
 
 function toggleCoverageOverlay() {
   showCoverage.value = !showCoverage.value
@@ -264,6 +286,10 @@ onUnmounted(() => {
   if (pilotControllerInterval) clearInterval(pilotControllerInterval)
   if (metarInterval) clearInterval(metarInterval)
   if (notamInterval) clearInterval(notamInterval)
+})
+
+onMounted(() => {
+  latestVersion.value = getLatestVersion(changelogContent)
 })
 </script>
 
