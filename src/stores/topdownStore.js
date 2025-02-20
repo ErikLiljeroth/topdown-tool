@@ -98,18 +98,17 @@ export const useTopdownStore = defineStore('topdown', {
   actions: {
     setUserPosition(position) {
       console.log('Setting user position:', position)
-      this.userPosition = position
 
-      // 1) Check if we already have an entry for that callsign
-      const existingIndex = this.onlineControllers.findIndex((ctrl) => ctrl.callsign === position)
+      // 1) Normalize
+      const normalized = normalizeCallsign(position)
+      this.userPosition = normalized
 
-      // 2) If not found, push a fake “online” entry
+      // 2) Check if we already have an entry for that callsign
+      const existingIndex = this.onlineControllers.findIndex((ctrl) => ctrl.callsign === normalized)
       if (existingIndex === -1) {
         this.onlineControllers.push({
-          callsign: position,
+          callsign: normalized,
         })
-      } else {
-        // not needed, but could be used to update the entry
       }
 
       this.resolveOwnership()
@@ -117,11 +116,9 @@ export const useTopdownStore = defineStore('topdown', {
 
     async fetchControllers() {
       try {
-        console.log('fetching controllers from https://api.vatiris.se/data')
         const response = await axios.get('https://api.vatiris.se/data')
         const rawControllers = response.data.controllers || []
 
-        // Transform callsigns with multiple underscores into single underscores
         const normalized = rawControllers.map((ctrl) => {
           const normCallsign = normalizeCallsign(ctrl.callsign)
           return {
@@ -130,7 +127,17 @@ export const useTopdownStore = defineStore('topdown', {
           }
         })
 
+        // Overwrite
         this.onlineControllers = normalized
+
+        // If user selected a position that isn't in the server data, re-add it:
+        if (this.userPosition) {
+          const userPos = this.userPosition
+          const alreadyThere = this.onlineControllers.some((ctrl) => ctrl.callsign === userPos)
+          if (!alreadyThere) {
+            this.onlineControllers.push({ callsign: userPos })
+          }
+        }
       } catch (err) {
         console.error('fetchControllers error:', err)
       }
