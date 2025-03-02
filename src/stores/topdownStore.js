@@ -323,6 +323,7 @@ export const useTopdownStore = defineStore('topdown', {
 
         const depIcao = (fp.departure || '').toUpperCase()
         const arrIcao = (fp.arrival || '').toUpperCase()
+        const flightRoute = fp.route ? `${fp.departure} ${fp.route} ${fp.arrival}` : ''
 
         const depRelevant = coverageSet.has(depIcao) && !omittedSet.has(depIcao)
         const arrRelevant = coverageSet.has(arrIcao) && !omittedSet.has(arrIcao)
@@ -346,6 +347,7 @@ export const useTopdownStore = defineStore('topdown', {
               aircraftType: fp.aircraft_short || fp.aircraft || 'N/A',
               departureAerodrome: depIcao,
               etd: fp.deptime,
+              flightRoute,
               newAlert: true,
               remarks: oldRemarks,
             })
@@ -381,6 +383,7 @@ export const useTopdownStore = defineStore('topdown', {
               aircraftType: fp.aircraft_short || fp.aircraft || 'N/A',
               arrivalAerodrome: arrIcao,
               eta: etaFormatted,
+              flightRoute,
               newAlert: true,
               remarks: oldRemarks, // preserve from dictionary
             })

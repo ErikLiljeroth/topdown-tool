@@ -24,6 +24,11 @@
       <label class="callsign">
         {{ strip.callsign }}<span v-if="!strip.hasFlightPlan">*</span>
       </label>
+      <div class="callsign-container">
+        <button class="callsign-btn" @click="toggleRouteOverlay">
+          {{ strip.callsign }}<span v-if="!strip.hasFlightPlan">*</span>
+        </button>
+      </div>
       <span class="type">{{ strip.aircraftType }}</span>
 
       <!-- Runway Badges Container -->
@@ -55,6 +60,16 @@
       <button class="snowtam-btn" @click="toggleSnowtamOverlay">NOTAM</button>
       <label class="remarks-label">RMK:</label>
       <input class="remarks-field" type="text" :value="localRemarks" @input="onRemarksInput" />
+    </div>
+
+    <!-- Flight Route Overlay -->
+    <div v-if="showRouteOverlay" class="route-overlay">
+      <div class="overlay-content">
+        <h4>Route</h4>
+        <!-- Display the route string; note that you should have computed it in your store -->
+        <p>{{ strip.flightRoute }}</p>
+        <button @click="toggleRouteOverlay">Close</button>
+      </div>
     </div>
 
     <!-- Snowtam overlay if open -->
@@ -126,6 +141,11 @@ function removeStrip() {
 function onRemarksInput(event) {
   localRemarks.value = event.target.value
   store.updateArrivalRemarks(props.strip.callsign, localRemarks.value)
+}
+
+const showRouteOverlay = ref(false)
+function toggleRouteOverlay() {
+  showRouteOverlay.value = !showRouteOverlay.value
 }
 
 /**
@@ -205,6 +225,29 @@ const fullMetar = computed(() => {
 .callsign {
   font-weight: bold;
   font-size: 0.9rem;
+}
+
+.callsign-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 0;
+}
+.route-overlay {
+  position: absolute;
+  top: 40px;
+  left: 10px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 10px;
+  border-radius: 4px;
+  z-index: 1000;
+}
+.overlay-content h4 {
+  margin: 0 0 5px;
 }
 
 .has-flight-plan {
