@@ -3,6 +3,7 @@
 ## v0.4 (2025-03-XX)
 
 - Display route on callsign click
+- Add basic drag and drop within each bay
 
 ## v0.3 (2025-02-20)
 

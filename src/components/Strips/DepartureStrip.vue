@@ -1,6 +1,5 @@
-<!-- /src/components/Strips/Departurestrip.vue-->
 <template>
-  <div class="strip departure" :class="{ blinking: strip.newAlert }">
+  <div class="strip departure" :class="{ blinking: strip.newAlert }" ref="stripRef">
     <!-- The right column (spanning 3 rows) -->
     <div class="ack-cell">
       <!-- If not acked, show ACK button. Otherwise, show X button. -->
@@ -20,14 +19,19 @@
     <!-- Row 1, left column -->
     <div class="row1">
       <span class="etd">{{ strip.etd || '----' }}</span>
-
-      <label class="callsign">
-        {{ strip.callsign }}<span v-if="!strip.hasFlightPlan">*</span>
-      </label>
       <div class="callsign-container">
-        <button class="callsign-btn" @click="toggleRouteOverlay">
+        <button
+          class="callsign-btn"
+          @mouseover="onCallsignMouseOver"
+          @mouseleave="onCallsignMouseLeave"
+          @click="onCallsignClick"
+        >
           {{ strip.callsign }}<span v-if="!strip.hasFlightPlan">*</span>
         </button>
+        <!-- Flight Route Overlay -->
+        <div v-if="showRouteOverlay" class="route-overlay">
+          <p>{{ strip.flightRoute }}</p>
+        </div>
       </div>
       <span class="type">{{ strip.aircraftType }}</span>
 
@@ -53,34 +57,20 @@
       </span>
     </div>
 
-    <!-- Row 3: SNOWTAM button + remarks -->
+    <!-- Row 3: NOTAM button + remarks -->
     <div class="row3">
-      <!--<span class="tl-label">TL{{ transitionLevel }}</span>-->
-      <!-- do not show TL for departures to reduce cluttering-->
+      <!-- do not show TL for departures to reduce clutter -->
       <button class="snowtam-btn" @click="toggleSnowtamOverlay">NOTAM</button>
       <label class="remarks-label">RMK:</label>
       <input class="remarks-field" type="text" :value="localRemarks" @input="onRemarksInput" />
-    </div>
-
-    <!-- Flight Route Overlay -->
-    <div v-if="showRouteOverlay" class="route-overlay">
-      <div class="overlay-content">
-        <h4>Route</h4>
-        <!-- Display the route string; note that you should have computed it in your store -->
-        <p>{{ strip.flightRoute }}</p>
-        <button @click="toggleRouteOverlay">Close</button>
-      </div>
     </div>
 
     <!-- Snowtam overlay if open -->
     <div v-if="showSnowtam" class="snowtam-overlay">
       <div class="snowtam-overlay-content">
         <h4>NOTAM for {{ strip.departureAerodrome }}</h4>
-        <pre v-if="notamText"
-          >{{ notamText }}
-        </pre>
+        <pre v-if="notamText">{{ notamText }}</pre>
         <pre v-else>No NOTAM found for {{ strip.departureAerodrome }}.</pre>
-
         <button @click="toggleSnowtamOverlay">Close</button>
       </div>
     </div>
@@ -88,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useTopdownStore } from '@/stores/topdownStore.js'
 import RunwayBadge from './RunwayBadge.vue'
 import { AERODROMES } from '@/data/swedenAerodromes.js'
@@ -118,7 +108,6 @@ const aerodrome = computed(() => {
 })
 
 const localRemarks = ref(props.strip.remarks)
-
 watch(localRemarks, (newVal) => {
   store.updateDepartureRemarks(props.strip.callsign, newVal)
 })
@@ -140,13 +129,46 @@ function removeStrip() {
 
 function onRemarksInput(event) {
   localRemarks.value = event.target.value
-  store.updateArrivalRemarks(props.strip.callsign, localRemarks.value)
+  store.updateDepartureRemarks(props.strip.callsign, localRemarks.value)
 }
 
+// Route overlay logic
 const showRouteOverlay = ref(false)
-function toggleRouteOverlay() {
-  showRouteOverlay.value = !showRouteOverlay.value
+const overlayLocked = ref(false)
+const stripRef = ref(null)
+
+function onCallsignMouseOver() {
+  if (!overlayLocked.value) {
+    showRouteOverlay.value = true
+  }
 }
+
+function onCallsignMouseLeave() {
+  if (!overlayLocked.value) {
+    showRouteOverlay.value = false
+  }
+}
+
+function onCallsignClick(event) {
+  if (!overlayLocked.value) {
+    overlayLocked.value = true
+    showRouteOverlay.value = true
+    document.addEventListener('click', handleClickOutside)
+    event.stopPropagation()
+  }
+}
+
+function handleClickOutside(event) {
+  if (stripRef.value && !stripRef.value.contains(event.target)) {
+    overlayLocked.value = false
+    showRouteOverlay.value = false
+    document.removeEventListener('click', handleClickOutside)
+  }
+}
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 
 /**
  * Toggle the (S)NO(W)TAM overlay
@@ -211,6 +233,7 @@ const fullMetar = computed(() => {
   align-items: center;
   padding: 1px 4px;
 }
+
 .row3 {
   grid-row: 3;
   grid-column: 1;
@@ -222,11 +245,6 @@ const fullMetar = computed(() => {
   font-size: 0.8rem;
 }
 
-.callsign {
-  font-weight: bold;
-  font-size: 0.9rem;
-}
-
 .callsign-btn {
   background: none;
   border: none;
@@ -236,22 +254,27 @@ const fullMetar = computed(() => {
   font-weight: bold;
   padding: 0;
 }
-.route-overlay {
-  position: absolute;
-  top: 40px;
-  left: 10px;
-  background-color: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  padding: 10px;
-  border-radius: 4px;
-  z-index: 1000;
-}
-.overlay-content h4 {
-  margin: 0 0 5px;
+
+.callsign-container {
+  position: relative;
+  display: inline-block;
 }
 
-.has-flight-plan {
-  text-decoration: underline;
+/* Updated Route Overlay Styling */
+.route-overlay {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 4px;
+  white-space: normal;
+  z-index: 1000;
+  margin-bottom: 4px;
+  min-width: 256px;
+  max-width: 90vw;
+  text-align: center;
 }
 
 .runway-badges {
@@ -357,13 +380,6 @@ const fullMetar = computed(() => {
   padding: 2px 30px;
   font-size: 1rem;
   font-weight: bold;
-}
-
-.snowtam-overlay-content h4 {
-  margin-top: 2px;
-  margin-bottom: 2px;
-  padding-top: 0;
-  padding-bottom: 0;
 }
 
 .snowtam-overlay {

@@ -1,8 +1,6 @@
-<!-- src/components/Strips/ArrivalStrip.vue -->
 <template>
-  <div class="strip arrival" :class="{ blinking: strip.newAlert }">
+  <div class="strip arrival" :class="{ blinking: strip.newAlert }" ref="stripRef">
     <div class="ack-cell">
-      <!-- If not acked, show ACK button. Otherwise, show X button. -->
       <button v-if="!strip.acked" class="ack-btn" @click="acknowledge">ACK</button>
       <button v-else class="remove-btn" @click="promptRemove = true">X</button>
     </div>
@@ -20,9 +18,18 @@
     <div class="row1">
       <span class="eta">{{ strip.eta || 'eta' }}</span>
       <div class="callsign-container">
-        <button class="callsign-btn" @click="toggleRouteOverlay">
+        <button
+          class="callsign-btn"
+          @mouseover="onCallsignMouseOver"
+          @mouseleave="onCallsignMouseLeave"
+          @click="onCallsignClick"
+        >
           {{ strip.callsign }}<span v-if="!strip.hasFlightPlan">*</span>
         </button>
+        <!-- Route overlay shows on hover or when locked open -->
+        <div v-if="showRouteOverlay" class="route-overlay">
+          <p>{{ strip.flightRoute }}</p>
+        </div>
       </div>
       <span class="type">{{ strip.aircraftType }}</span>
 
@@ -55,16 +62,6 @@
       <input class="remarks-field" type="text" :value="localRemarks" @input="onRemarksInput" />
     </div>
 
-    <!-- Flight Route Overlay -->
-    <div v-if="showRouteOverlay" class="route-overlay">
-      <div class="overlay-content">
-        <h4>Route</h4>
-        <!-- Display the route string; note that you should have computed it in your store -->
-        <p>{{ strip.flightRoute }}</p>
-        <button @click="toggleRouteOverlay">Close</button>
-      </div>
-    </div>
-
     <!-- NOTAM overlay -->
     <div v-if="showSnowtam" class="snowtam-overlay">
       <div class="snowtam-overlay-content">
@@ -78,7 +75,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { useTopdownStore } from '@/stores/topdownStore.js'
 import RunwayBadge from './RunwayBadge.vue'
 import { AERODROMES } from '@/data/swedenAerodromes.js'
@@ -96,44 +93,69 @@ const props = defineProps({
 const promptRemove = ref(false)
 const showSnowtam = ref(false)
 
-// Use the arrival aerodrome for NOTAM lookup
 const notamText = computed(() => {
   const icao = props.strip.arrivalAerodrome
   return store.notamsByIcao[icao] || ''
 })
 
-// Get the aerodrome information for the arrival aerodrome
 const aerodrome = computed(() => {
   return AERODROMES.find((aero) => aero.icao === props.strip.arrivalAerodrome) || {}
 })
 
 const localRemarks = ref(props.strip.remarks)
-
 function onRemarksInput(event) {
   localRemarks.value = event.target.value
   store.updateArrivalRemarks(props.strip.callsign, localRemarks.value)
 }
 
-// ACK function
 function acknowledge() {
   store.ackArrivalStrip(props.strip.callsign)
 }
 
-// Delete strip
 function removeStrip() {
   promptRemove.value = false
   store.removeArrivalStrip(props.strip.callsign)
 }
 
+// Route overlay logic
 const showRouteOverlay = ref(false)
-function toggleRouteOverlay() {
-  showRouteOverlay.value = !showRouteOverlay.value
+const overlayLocked = ref(false)
+const stripRef = ref(null)
+
+function onCallsignMouseOver() {
+  if (!overlayLocked.value) {
+    showRouteOverlay.value = true
+  }
 }
 
-// Toggle the NOTAM overlay
-function toggleSnowtamOverlay() {
-  showSnowtam.value = !showSnowtam.value
+function onCallsignMouseLeave() {
+  if (!overlayLocked.value) {
+    showRouteOverlay.value = false
+  }
 }
+
+function onCallsignClick(event) {
+  if (!overlayLocked.value) {
+    overlayLocked.value = true
+    showRouteOverlay.value = true
+    document.addEventListener('click', handleClickOutside)
+    event.stopPropagation() // Prevent the click from immediately triggering the outside handler
+  }
+}
+
+function handleClickOutside(event) {
+  // If the click target is outside this strip, unlock and hide the overlay.
+  if (stripRef.value && !stripRef.value.contains(event.target)) {
+    overlayLocked.value = false
+    showRouteOverlay.value = false
+    document.removeEventListener('click', handleClickOutside)
+  }
+}
+
+// Clean up the global click listener if the component unmounts
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 
 // Full METAR text for the arrival aerodrome
 const fullMetar = computed(() => {
@@ -143,22 +165,13 @@ const fullMetar = computed(() => {
   return metarObj.message ? metarObj.message.slice(7) : '(parsed, no raw)'
 })
 
-// Computed transition level (TL)
 const transitionLevel = computed(() => {
   if (!fullMetar.value) return '--'
-
-  // Extract QNH from the METAR (look for "Q" followed by 3 or 4 digits)
   const match = fullMetar.value.match(/\bQ(\d{3,4})\b/)
   if (!match) return '--'
   const qnh = parseInt(match[1], 10)
   if (isNaN(qnh)) return '--'
-
-  // Get the local transition altitude from the aerodrome data
-  // (Expected values: 5000, 6000, or 9000; default to 5000 if undefined)
   const ta = aerodrome.value.transitionAltitude || 5000
-
-  // Lookup table for TL determination:
-  // Each row is defined by a QNH range and the corresponding TL (in flight level units) for each TA.
   const table = [
     { min: 1051, max: Infinity, tl: { 5000: 50, 6000: 60, 9000: 90 } },
     { min: 1032, max: 1050, tl: { 5000: 55, 6000: 65, 9000: 95 } },
@@ -169,15 +182,15 @@ const transitionLevel = computed(() => {
     { min: 943, max: 959, tl: { 5000: 80, 6000: 90, 9000: 120 } },
     { min: -Infinity, max: 942, tl: { 5000: 85, 6000: 95, 9000: 125 } },
   ]
-
-  // Find the row matching the current QNH
   const row = table.find((r) => qnh >= r.min && qnh <= r.max)
   if (!row) return '--'
-
-  // Use the TA as key – if it isn’t one of the expected ones, default to the 5000 column.
   const key = [5000, 6000, 9000].includes(ta) ? ta : 5000
   return row.tl[key]
 })
+
+function toggleSnowtamOverlay() {
+  showSnowtam.value = !showSnowtam.value
+}
 </script>
 
 <style scoped>
@@ -236,9 +249,9 @@ const transitionLevel = computed(() => {
   font-size: 0.75rem;
 }
 
-.callsign {
-  font-weight: bold;
-  font-size: 0.9rem;
+.callsign-container {
+  position: relative;
+  display: inline-block;
 }
 
 .callsign-btn {
@@ -250,22 +263,21 @@ const transitionLevel = computed(() => {
   font-weight: bold;
   padding: 0;
 }
+
 .route-overlay {
   position: absolute;
-  top: 40px;
-  left: 10px;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
   background-color: rgba(0, 0, 0, 0.8);
   color: #fff;
-  padding: 10px;
   border-radius: 4px;
+  white-space: normal;
   z-index: 1000;
-}
-.overlay-content h4 {
-  margin: 0 0 5px;
-}
-
-.has-flight-plan {
-  text-decoration: underline;
+  margin-bottom: 4px;
+  min-width: 256px;
+  max-width: 90vw;
+  text-align: center;
 }
 
 .runway-badges {
