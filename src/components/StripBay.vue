@@ -106,7 +106,7 @@ const arrivalStrips = computed({
 
 /* This class is applied to the placeholder element */
 .sortable-ghost {
-  opacity: 0.4;
+  opacity: 0;
 }
 
 /* The fallback class styles the dragged element to stand out */
