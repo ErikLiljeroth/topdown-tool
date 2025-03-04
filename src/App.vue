@@ -127,7 +127,6 @@ import ChangelogModal from '@/components/ChangelogModal.vue'
 
 const store = useTopdownStore()
 
-// Suppose you keep your version string and markdown in the same file or import from external modules
 const changelogContent = changelogMd
 const latestVersion = ref('v0.0')
 
@@ -141,7 +140,7 @@ function getLatestVersion(markdownContent) {
 
   // Look for the first line that starts with "## v..."
   for (const line of lines) {
-    const match = line.match(/^##\s+(v[\d.]+)/)
+    const match = line.match(/^###\s+(v[\d.]+)/)
     if (match) {
       return match[1]
     }

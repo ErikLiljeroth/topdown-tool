@@ -14,7 +14,7 @@
       </div>
     </div>
 
-    <!-- Row 1: ETA, callsign, aircraft type, flight plan indicator, runway badges -->
+    <!-- Row 1: ETA, callsign, aircraft type, flight plan indicator, last route point, runway badges -->
     <div class="row1">
       <span class="eta">{{ strip.eta || 'eta' }}</span>
       <div class="callsign-container">
@@ -33,12 +33,16 @@
       </div>
       <span class="type">{{ strip.aircraftType }}</span>
 
+      <!-- New element: Display the last route point (if available) -->
+      <span class="route-point" v-if="lastRoutePoint">{{ lastRoutePoint }}</span>
+
       <div class="runway-badges">
         <RunwayBadge
           v-for="rwy in aerodrome.runways"
           :key="rwy"
           :runway="rwy"
           :metar="fullMetar || ''"
+          :preferred="aerodrome.prfArrRWY && aerodrome.prfArrRWY.includes(rwy)"
         />
       </div>
     </div>
@@ -144,7 +148,6 @@ function onCallsignClick(event) {
 }
 
 function handleClickOutside(event) {
-  // If the click target is outside this strip, unlock and hide the overlay.
   if (stripRef.value && !stripRef.value.contains(event.target)) {
     overlayLocked.value = false
     showRouteOverlay.value = false
@@ -152,7 +155,6 @@ function handleClickOutside(event) {
   }
 }
 
-// Clean up the global click listener if the component unmounts
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
 })
@@ -186,6 +188,21 @@ const transitionLevel = computed(() => {
   if (!row) return '--'
   const key = [5000, 6000, 9000].includes(ta) ? ta : 5000
   return row.tl[key]
+})
+
+// Computed property to extract the last route point from the flight route
+const lastRoutePoint = computed(() => {
+  if (!props.strip.flightRoute) return ''
+  // Split the route into words (by whitespace)
+  const words = props.strip.flightRoute.trim().split(/\s+/)
+  // Iterate backwards to find the first word that has 3 or 5 characters
+  for (let i = words.length - 1; i >= 0; i--) {
+    const word = words[i]
+    if (word.length === 3 || word.length === 5) {
+      return word
+    }
+  }
+  return ''
 })
 
 function toggleSnowtamOverlay() {
@@ -238,6 +255,7 @@ function toggleSnowtamOverlay() {
   align-items: center;
   padding: 1px 4px;
 }
+
 .row3 {
   grid-row: 3;
   grid-column: 1;
@@ -268,7 +286,7 @@ function toggleSnowtamOverlay() {
   position: absolute;
   bottom: 100%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-0%);
   background-color: rgba(0, 0, 0, 0.8);
   color: #fff;
   border-radius: 4px;
@@ -278,6 +296,13 @@ function toggleSnowtamOverlay() {
   min-width: 256px;
   max-width: 90vw;
   text-align: center;
+}
+
+/* New styling for the last route point */
+.route-point {
+  font-size: 0.8rem;
+  color: #000;
+  margin: 0 4px;
 }
 
 .runway-badges {
@@ -371,6 +396,7 @@ function toggleSnowtamOverlay() {
   z-index: 999;
   font-size: 1rem;
 }
+
 .overlay-content {
   display: flex;
   flex-direction: column;
@@ -382,13 +408,6 @@ function toggleSnowtamOverlay() {
   padding: 2px 30px;
   font-size: 1rem;
   font-weight: bold;
-}
-
-.snowtam-overlay-content h4 {
-  margin-top: 2px;
-  margin-bottom: 2px;
-  padding-top: 0;
-  padding-bottom: 0;
 }
 
 .snowtam-overlay {

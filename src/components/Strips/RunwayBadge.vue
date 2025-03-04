@@ -1,8 +1,11 @@
-<!-- src/components/Strips/RunwayBadge.vue-->
 <template>
   <div
     class="runway-badge"
-    :class="{ tailwind: isSignificantTailwind, headwind: isSignificantHeadwind }"
+    :class="{
+      'preferred-runway': preferred,
+      tailwind: isSignificantTailwind,
+      headwind: isSignificantHeadwind,
+    }"
   >
     <!-- Wind components (stacked vertically) -->
     <div class="wind-components" v-if="windData">
@@ -45,15 +48,19 @@ const props = defineProps({
     type: String,
     required: true,
   },
+
+  preferred: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 /**
- * Parse wind from METAR, including gust, but IGNORE gust for the component calcs.
- * e.g. "23018G30KT" => windDir=230, windSpeed=18 (gust=30 ignored)
+ * Parse wind from METAR, ignoring gust for the component calculations.
+ * e.g. "23018G30KT" => windDir=230, windSpeed=18 (gust ignored)
  */
 function parseWind(metarText) {
   if (!metarText) return null
-  // Matches 3-digit wind direction, 2-3 digit speed, optional "Gxx" gust, then "KT"
   const regex = /(\d{3})(\d{2,3})(G(\d{2,3}))?KT/
   const match = metarText.match(regex)
   if (match) {
@@ -69,13 +76,12 @@ function degToRad(deg) {
   return (deg * Math.PI) / 180
 }
 
-/** Convert runway label "15" => heading 150°, "03" => 30°, etc. NAIVE method, later use true heading*/
+/** Convert runway label "15" => heading 150°, "03" => 30° */
 const runwayHeading = computed(() => {
   const num = parseInt(props.runway, 10)
   return num * 10
 })
 
-/** Parse wind from the METAR string. */
 const windData = computed(() => parseWind(props.metar))
 
 /**
@@ -83,19 +89,15 @@ const windData = computed(() => parseWind(props.metar))
  */
 const components = computed(() => {
   if (!windData.value) return null
-
   const { windDir, windSpeed } = windData.value
   const rwyHeading = runwayHeading.value
-
   let angleDiff = windDir - rwyHeading
   angleDiff = ((angleDiff + 180) % 360) - 180
-
   const angleRad = degToRad(angleDiff)
   const crosswind = Math.abs(windSpeed * Math.sin(angleRad))
   const headwind = windSpeed * Math.cos(angleRad)
-
   return {
-    angleDiff, // keep sign for crosswind direction logic
+    angleDiff,
     crosswind: Math.round(crosswind),
     headwind: Math.round(headwind),
   }
@@ -105,54 +107,35 @@ const isTailwind = computed(() => {
   return components.value && components.value.headwind < 0
 })
 
-const headwindComponent = computed(() => {
-  return components.value ? components.value.headwind : 0
-})
+const headwindComponent = computed(() => (components.value ? components.value.headwind : 0))
+const crosswindComponent = computed(() => (components.value ? components.value.crosswind : 0))
 
-const crosswindComponent = computed(() => {
-  return components.value ? components.value.crosswind : 0
-})
-
-/**
- * Decide which arrow to show for headwind/tailwind
- */
 const headwindArrow = computed(() => {
   return isTailwind.value ? '↑' : '↓'
 })
 
-/**
- * Crosswind arrow
- */
 const crossArrow = computed(() => {
   if (!components.value) return ''
   return components.value.angleDiff < 0 ? '→' : '←'
 })
 
-/**
- * Dynamic classes for the headwind/tailwind arrow color.
- */
 const headwindArrowClass = computed(() => {
   if (!components.value) return ''
   const mag = Math.abs(headwindComponent.value)
-
-  if (isTailwind.value) {
-    // tailwind
-    return mag >= 5 ? 'arrow-red' : 'arrow-white'
-  } else {
-    // headwind
-    return mag >= 5 ? 'arrow-green' : 'arrow-white'
-  }
+  return isTailwind.value
+    ? mag >= 5
+      ? 'arrow-red'
+      : 'arrow-white'
+    : mag >= 5
+      ? 'arrow-green'
+      : 'arrow-white'
 })
 
-/**
- * Only apply the "tailwind" class (red background) if tailwind >= 5KT
- */
 const isSignificantTailwind = computed(() => {
   if (!components.value) return false
   return isTailwind.value && Math.abs(headwindComponent.value) >= 5
 })
 
-// If it's not tailwind and the headwind component is >= 5 KT
 const isSignificantHeadwind = computed(() => {
   if (!components.value) return false
   return !isTailwind.value && Math.abs(headwindComponent.value) >= 5
@@ -172,30 +155,25 @@ const isSignificantHeadwind = computed(() => {
   margin: 0 1px;
   transition: background-color 0.2s ease;
   cursor: default;
-
   justify-content: space-between;
+}
+
+.preferred-runway {
+  border: 2px solid black;
 }
 
 .runway-number {
   margin-left: 2px;
 }
 
-/*
-   If tailwind >= 5KT, the background is tinted slightly red/pink
-*/
 .runway-badge.tailwind {
   background-color: #ffecec;
 }
 
 .runway-badge.headwind {
-  background-color: #e0ffe0; /* A light green tint */
+  background-color: #e0ffe0;
 }
 
-/*
-   Wind components stacked vertically:
-   - Top line: headwind/tailwind
-   - Bottom line: crosswind
-*/
 .wind-components {
   display: flex;
   flex-direction: column;
@@ -215,28 +193,26 @@ const isSignificantHeadwind = computed(() => {
   line-height: 0.5;
 }
 
-/* Headwind & tailwind arrow colors */
 .arrow-green {
   color: green;
   font-weight: bold;
 }
+
 .arrow-red {
   color: red;
   font-weight: bold;
 }
+
 .arrow-white {
   color: black;
   font-weight: bold;
 }
 
-/* Crosswind arrows.
-*/
 .cross-arrow {
   color: black;
   font-weight: bold;
 }
 
-/* Fallback if no METAR wind info */
 .no-data {
   font-style: italic;
   color: #999;

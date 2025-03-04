@@ -35,6 +35,9 @@
       </div>
       <span class="type">{{ strip.aircraftType }}</span>
 
+      <!-- New element: Display the first route point (if available) -->
+      <span class="route-point" v-if="firstRoutePoint">{{ firstRoutePoint }}</span>
+
       <!-- Runway Badges Container -->
       <div class="runway-badges">
         <RunwayBadge
@@ -42,6 +45,7 @@
           :key="rwy"
           :runway="rwy"
           :metar="fullMetar || ''"
+          :preferred="aerodrome.prfDepRWY && aerodrome.prfDepRWY.includes(rwy)"
         />
       </div>
     </div>
@@ -113,14 +117,14 @@ watch(localRemarks, (newVal) => {
 })
 
 /**
- * ACK button => strip is acked => newAlert=false, acked=true
+ * ACK button: marks strip as acknowledged.
  */
 function acknowledge() {
   store.ackDepartureStrip(props.strip.callsign)
 }
 
 /**
- * Delete strip
+ * Delete strip.
  */
 function removeStrip() {
   promptRemove.value = false
@@ -171,7 +175,7 @@ onBeforeUnmount(() => {
 })
 
 /**
- * Toggle the (S)NO(W)TAM overlay
+ * Toggle the (S)NO(W)TAM overlay.
  */
 function toggleSnowtamOverlay() {
   showSnowtam.value = !showSnowtam.value
@@ -185,6 +189,23 @@ const fullMetar = computed(() => {
   const metarObj = store.metarsByIcao[icao] || null
   if (!metarObj) return null
   return metarObj.message ? metarObj.message.slice(7) : '(parsed, no raw)'
+})
+
+/**
+ * Computed property to extract the first route point from the flight route.
+ * Split the flightRoute into words and iterate from the beginning to find a word
+ * that is either 3 or 5 characters long.
+ */
+const firstRoutePoint = computed(() => {
+  if (!props.strip.flightRoute) return ''
+  const words = props.strip.flightRoute.trim().split(/\s+/)
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i]
+    if (word.length === 3 || word.length === 5) {
+      return word
+    }
+  }
+  return ''
 })
 </script>
 
@@ -265,7 +286,7 @@ const fullMetar = computed(() => {
   position: absolute;
   bottom: 100%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-0%);
   background-color: rgba(0, 0, 0, 0.8);
   color: #fff;
   border-radius: 4px;
@@ -275,6 +296,13 @@ const fullMetar = computed(() => {
   min-width: 256px;
   max-width: 90vw;
   text-align: center;
+}
+
+/* New styling for the first route point */
+.route-point {
+  font-size: 0.8rem;
+  color: #000;
+  margin: 0 4px;
 }
 
 .runway-badges {
