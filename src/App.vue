@@ -7,7 +7,10 @@
 
       <select v-model="store.userPosition" @change="toggleDropdown">
         <option disabled value="">-- Select your position --</option>
-        <optgroup label="ESMM Positions">
+        <optgroup label="ESAA">
+          <option value="ESAA_CTR">ESAA_CTR</option>
+        </optgroup>
+        <optgroup label="ESMM">
           <option value="ESMM_2_CTR">ESMM_2_CTR</option>
           <option value="ESMM_3_CTR">ESMM_3_CTR</option>
           <option value="ESMM_4_CTR">ESMM_4_CTR</option>
@@ -23,7 +26,7 @@
           <option value="ESGG_E_APP">ESGG_E_APP</option>
           <option value="ESGG_W_APP">ESGG_W_APP</option>
         </optgroup>
-        <optgroup label="ESOS Positions">
+        <optgroup label="ESOS">
           <option value="ESOS_1_CTR">ESOS_1_CTR</option>
           <option value="ESOS_2_CTR">ESOS_2_CTR</option>
           <option value="ESOS_3_CTR">ESOS_3_CTR</option>
@@ -31,6 +34,7 @@
           <option value="ESOS_6_CTR">ESOS_6_CTR</option>
           <option value="ESOS_7_CTR">ESOS_7_CTR</option>
           <option value="ESOS_8_CTR">ESOS_8_CTR</option>
+          <option value="ESOS_8_CTR">ESOS_9_CTR</option>
           <option value="ESOS_N_CTR">ESOS_N_CTR</option>
           <option value="ESOS_F_CTR">ESOS_F_CTR</option>
           <option value="ESOS_K_CTR">ESOS_K_CTR</option>
@@ -40,6 +44,7 @@
         </optgroup>
         <optgroup label="RTC">
           <option value="ESSR_CTR">ESSR_CTR</option>
+          <option value="ESSR_MM_APP">ESSR_MM_APP</option>
         </optgroup>
       </select>
 

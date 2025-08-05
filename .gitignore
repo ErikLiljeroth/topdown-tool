@@ -86,3 +86,6 @@ typings/
 *.md
 !README.md
 !CHANGELOG.md
+
+# Ignore Euroscope sectorfile
+*.ese

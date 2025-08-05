@@ -2,10 +2,10 @@
 export const POSITIONS = [
   // --- 1) Swedish “Planner”  ---
   {
-    callsign: 'ESAA_PLN_CTR',
-    name: 'Sweden Planner',
+    callsign: 'ESAA_CTR',
+    name: 'Sweden Control',
     frequency: '126.825',
-    sectorCode: 'PLN',
+    sectorCode: 'AA',
     facilityType: 'CTR',
     icao: 'ESAA',
   },
@@ -1119,7 +1119,17 @@ export const POSITIONS = [
     icao: 'ESSR',
   },
 
-  // --- 51) ESST (Torsby) ---
+  // --- 51) ESSR_MM_APP (RTC Malmö) ---
+  {
+    callsign: 'ESSR_MM_APP',
+    name: 'RTC Malmö',
+    frequency: '122.325',
+    sectorCode: 'RTM',
+    facilityType: 'APP',
+    icao: 'ESSR',
+  },
+
+  // --- 52) ESST (Torsby) ---
   {
     callsign: 'ESST_I_TWR',
     name: 'Torsby Information',
@@ -1129,7 +1139,7 @@ export const POSITIONS = [
     icao: 'ESST',
   },
 
-  // --- 52) ESSU (Eskilstuna) ---
+  // --- 53) ESSU (Eskilstuna) ---
   {
     callsign: 'ESSU_I_TWR',
     name: 'Eskilstuna Information',
@@ -1139,7 +1149,7 @@ export const POSITIONS = [
     icao: 'ESSU',
   },
 
-  // --- 53) ESSV (Visby) ---
+  // --- 54) ESSV (Visby) ---
   {
     callsign: 'ESSV_APP',
     name: 'Visby Approach',
@@ -1157,7 +1167,7 @@ export const POSITIONS = [
     icao: 'ESSV',
   },
 
-  // --- 54) ESTA (Ängelholm) ---
+  // --- 55) ESTA (Ängelholm) ---
   {
     callsign: 'ESTA_APP',
     name: 'Ängelholm Approach',
@@ -1175,7 +1185,7 @@ export const POSITIONS = [
     icao: 'ESTA',
   },
 
-  // --- 55) ESTL (Ljungbyhed) ---
+  // --- 56) ESTL (Ljungbyhed) ---
   {
     callsign: 'ESTL_APP',
     name: 'Ljungbyhed Approach',
@@ -1209,7 +1219,7 @@ export const POSITIONS = [
     icao: 'ESTL',
   },
 
-  // --- 56) ESUP (Pajala) ---
+  // --- 57) ESUP (Pajala) ---
   {
     callsign: 'ESUP_I_TWR',
     name: 'Pajala Information',
@@ -1219,7 +1229,7 @@ export const POSITIONS = [
     icao: 'ESUP',
   },
 
-  // --- 57) ESUT (Hemavan) ---
+  // --- 58) ESUT (Hemavan) ---
   {
     callsign: 'ESUT_I_TWR',
     name: 'Hemavan Information',
