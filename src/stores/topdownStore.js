@@ -84,6 +84,7 @@ export const useTopdownStore = defineStore('topdown', {
     ownedAerodromes: [],
     metarsByIcao: {},
     notamsByIcao: {},
+    notamServiceAvailable: true, // Track NOTAM service availability
     ignoredStrips: [],
     soundEnabled: false, // Can be used to control whether sound is played for new strips
     remarksByCallsign: {},
@@ -92,6 +93,9 @@ export const useTopdownStore = defineStore('topdown', {
   getters: {
     chosenPosition(state) {
       return state.userPosition || 'UNDEFINED'
+    },
+    isNotamServiceAvailable(state) {
+      return state.notamServiceAvailable
     },
   },
 
@@ -204,15 +208,33 @@ export const useTopdownStore = defineStore('topdown', {
         const resp = await axios.get('https://api.vatiris.se/notam')
         const fullNotamText = resp.data || ''
 
+        // Mark service as available on successful fetch
+        this.notamServiceAvailable = true
+
         AERODROMES.forEach((aerodrome) => {
           const snippet = extractNotam(fullNotamText, aerodrome.icao)
           this.notamsByIcao[aerodrome.icao] = snippet
         })
       } catch (err) {
-        console.error('Error fetching NOTAM data:', err)
-        // fallback: store error placeholders
-        this.ownedAerodromes.forEach((icao) => {
-          this.notamsByIcao[icao] = `Error fetching NOTAM for ${icao}`
+        // Handle different types of errors gracefully
+        if (err.response?.status === 500) {
+          console.warn(
+            'NOTAM endpoint is currently not working correctly (500 error). This is likely due to upstream format changes.',
+          )
+        } else {
+          console.error('Error fetching NOTAM data:', err)
+        }
+
+        // Mark service as unavailable
+        this.notamServiceAvailable = false
+
+        // Clear any existing NOTAM data to avoid stale information
+        this.notamsByIcao = {}
+
+        // Set a generic message for all aerodromes to indicate NOTAM data is unavailable
+        AERODROMES.forEach((aerodrome) => {
+          this.notamsByIcao[aerodrome.icao] =
+            'NOTAM data unavailable due vatIRIS API issues linked to LFV AroWeb update'
         })
       }
     },

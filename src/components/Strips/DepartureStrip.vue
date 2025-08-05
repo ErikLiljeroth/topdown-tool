@@ -64,7 +64,13 @@
     <!-- Row 3: NOTAM button + remarks -->
     <div class="row3">
       <!-- do not show TL for departures to reduce clutter -->
-      <button class="snowtam-btn" @click="toggleSnowtamOverlay">NOTAM</button>
+      <button
+        class="snowtam-btn"
+        :class="{ 'snowtam-btn-unavailable': isNotamUnavailable }"
+        @click="toggleSnowtamOverlay"
+      >
+        NOTAM
+      </button>
       <label class="remarks-label">RMK:</label>
       <input class="remarks-field" type="text" :value="localRemarks" @input="onRemarksInput" />
     </div>
@@ -102,6 +108,10 @@ const showSnowtam = ref(false)
 const notamText = computed(() => {
   const icao = props.strip.departureAerodrome
   return store.notamsByIcao[icao] || ''
+})
+
+const isNotamUnavailable = computed(() => {
+  return !store.isNotamServiceAvailable
 })
 
 /**
@@ -372,6 +382,15 @@ const firstRoutePoint = computed(() => {
 }
 .snowtam-btn:hover {
   background-color: #ddf;
+}
+
+.snowtam-btn-unavailable {
+  background-color: #f0f0f0;
+  color: #999;
+  border-color: #ccc;
+}
+.snowtam-btn-unavailable:hover {
+  background-color: #e0e0e0;
 }
 
 .remarks-field {

@@ -61,7 +61,13 @@
     <!-- Row 3: Transition Level display, NOTAM button, and remarks field -->
     <div class="row3">
       <span class="tl-label">TL{{ transitionLevel }}</span>
-      <button class="snowtam-btn" @click="toggleSnowtamOverlay">NOTAM</button>
+      <button
+        class="snowtam-btn"
+        :class="{ 'snowtam-btn-unavailable': isNotamUnavailable }"
+        @click="toggleSnowtamOverlay"
+      >
+        NOTAM
+      </button>
       <label class="remarks-label">RMK:</label>
       <input class="remarks-field" type="text" :value="localRemarks" @input="onRemarksInput" />
     </div>
@@ -100,6 +106,10 @@ const showSnowtam = ref(false)
 const notamText = computed(() => {
   const icao = props.strip.arrivalAerodrome
   return store.notamsByIcao[icao] || ''
+})
+
+const isNotamUnavailable = computed(() => {
+  return !store.isNotamServiceAvailable
 })
 
 const aerodrome = computed(() => {
@@ -372,6 +382,15 @@ function toggleSnowtamOverlay() {
 }
 .snowtam-btn:hover {
   background-color: rgb(250, 232, 133);
+}
+
+.snowtam-btn-unavailable {
+  background-color: #f0f0f0;
+  color: #999;
+  border-color: #ccc;
+}
+.snowtam-btn-unavailable:hover {
+  background-color: #e0e0e0;
 }
 
 .remarks-field {
