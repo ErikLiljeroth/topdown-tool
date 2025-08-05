@@ -1,5 +1,11 @@
 # Changelog
 
+### v0.5 [2025-08-05]
+
+- Update position and ownership dataset after ESOS position re-sectorization.
+- Add ESSR_MM_APP and ESAA_CTR.
+- Handle missing NOTAM data from VatIRIS API.
+
 ### v0.4 [2025-03-04]
 
 - For departures display the first (valid) route waypoint in strip.
