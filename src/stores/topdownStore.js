@@ -177,6 +177,7 @@ export const useTopdownStore = defineStore('topdown', {
           lines.forEach((line) => {
             // e.g. "ESGG 301320Z 18005KT 2400..."
             if (!line) return
+            line = line.replace(/^METAR\s*(AMD|COR)?\s*/, "")
             const maybeIcao = line.substring(0, 4).toUpperCase()
             if (!/^[A-Z0-9]{4}$/i.test(maybeIcao)) {
               console.warn('Skipping line:', line)

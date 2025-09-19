@@ -126,7 +126,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useTopdownStore } from '@/stores/topdownStore.js'
 import StripBay from '@/components/StripBay.vue'
 import { AERODROMES } from '@/data/swedenAerodromes.js'
-import { POSITIONS } from '/home/erik/topdowntool/src/data/swedenPositions.js'
+import { POSITIONS } from '@/data/swedenPositions.js'
 import changelogMd from '../CHANGELOG.md?raw'
 import ChangelogModal from '@/components/ChangelogModal.vue'
 
