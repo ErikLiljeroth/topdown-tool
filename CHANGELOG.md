@@ -1,5 +1,9 @@
 # Changelog
 
+### v0.6 [2025-10-25]
+
+- Merge fix from M.Insulander for VatIRIS METAR API
+
 ### v0.5 [2025-08-05]
 
 - Update position and ownership dataset after ESOS position re-sectorization.
